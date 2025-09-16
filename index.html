@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Air Quality Monitor - Colombo Fort Monitoring Station</title>
+  <style>
+    :root{
+      --bg-1: #0f172a;
+      --bg-2: #0b3d91;
+      --accent: #7c3aed;
+      --glass: rgba(255,255,255,0.06);
+      --ui-font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--ui-font);
+      overflow:hidden;
+      color:white;
+      background: radial-gradient(1200px 800px at 10% 10%, rgba(124,58,237,0.12), transparent),
+                  conic-gradient(from 120deg at 50% 50%, #052b4f, #0b3d91, #0f172a);
+    }
+
+    .stage{position:relative;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden}
+
+    .clickable{
+      z-index:30;
+      text-align:center;
+      cursor:pointer;
+      max-width:80%;
+    }
+
+    .site-title{
+      font-weight:900;
+      font-size:clamp(28px, 4.6vw, 54px);
+      letter-spacing:0.02em;
+      line-height:1.2;
+      margin-bottom:14px;
+      text-shadow:0 0 3px rgba(255,255,255,0.8),0 0 8px rgba(124,58,237,0.8);
+    }
+
+    .site-subtitle{
+      font-weight:700;
+      font-size:clamp(18px,2.4vw,28px);
+      margin-bottom:16px;
+      text-shadow:0 0 3px rgba(255,255,255,0.6),0 0 6px rgba(124,58,237,0.7);
+    }
+
+    .site-title .char{display:inline-block}
+    @keyframes wave{0%{transform:translateY(0) scale(1)}30%{transform:translateY(-18px) scale(1.34)}60%{transform:translateY(0) scale(1)}100%{transform:translateY(0) scale(1)}}
+    .site-title .char{animation:wave 1.6s ease-in-out infinite;animation-delay:calc(var(--i)*0.08s);}
+
+    .effect-neon{background:linear-gradient(90deg,rgba(255,255,255,0.95),rgba(255,255,255,0.85));-webkit-background-clip:text;background-clip:text;color:transparent;}
+
+    .site-url{font-weight:800;font-size:clamp(18px,2.8vw,32px)}
+    .gradiant-flow{background:linear-gradient(90deg,#ffd166,#fb4d6d,#7c3aed,#38b6ff,#ffd166);background-size:400% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:flow 6s linear infinite;}
+    @keyframes flow{0%{background-position:0% 50%}100%{background-position:100% 50%}}
+
+    canvas#smokeCanvas{position:absolute;inset:0;z-index:20;pointer-events:none;mix-blend-mode:screen}
+    .vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(60% 40% at 50% 40%,rgba(255,255,255,0.02),transparent 20%,rgba(0,0,0,0.6));z-index:50}
+    .popup-word{position:absolute;font-weight:700;font-size:clamp(12px,2vw,28px);opacity:0;pointer-events:none;transform:translate3d(-50%,-50%,0) scale(0.9);mix-blend-mode:screen;text-shadow:0 0 12px rgba(255,255,255,0.4)}
+
+    @keyframes popupFloat {
+      0% {opacity:0; transform:translate3d(-50%,-50%,0) scale(0.8) rotate(0deg);}
+      20% {opacity:1; transform:translate3d(-50%,-60%,0) scale(1) rotate(-3deg);}
+      40% {transform:translate3d(-50%,-65%,0) scale(1.05) rotate(3deg);}
+      60% {transform:translate3d(-50%,-70%,0) scale(0.95) rotate(-2deg);}
+      80% {transform:translate3d(-50%,-75%,0) scale(1.02) rotate(2deg);}
+      100% {opacity:0; transform:translate3d(-50%,-80%,0) scale(0.9) rotate(0deg);}
+    }
+
+    .hint{position:fixed;left:12px;bottom:12px;z-index:60;font-size:12px;background:var(--glass);padding:8px 10px;border-radius:10px;color:#dbeafe}
+
+    /* Overlay for transition */
+    .overlay {
+      position:fixed;
+      inset:0;
+      background:transparent;
+      z-index:100;
+      pointer-events:none;
+      transition:background 5s ease;
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <canvas id="smokeCanvas"></canvas>
+
+    <div class="clickable" id="clickable">
+      <div id="title" class="site-title effect-neon">Air Quality Monitoring Station at Colombo Fort</div>
+      <div id="subtitle" class="site-subtitle">Launching of the new Air Quality Monitor, donated by AFD / Airparif</div>
+      <div class="site-url"><span class="gradiant-flow">ellonasoft.io</span></div>
+    </div>
+
+    <div class="vignette"></div>
+    <div class="hint">CEA</div>
+    <div class="overlay" id="overlay"></div>
+  </div>
+
+  <script>
+    // Wave letters
+    (function(){
+      const el=document.getElementById('title');
+      const text=el.textContent.trim();
+      el.innerHTML='';
+      for(let i=0;i<text.length;i++){
+        const ch=document.createElement('span');
+        ch.className='char';
+        ch.style.setProperty('--i',i);
+        ch.textContent=text[i]===' '?'\u00A0':text[i];
+        el.appendChild(ch);
+      }
+    })();
+
+    // Background words
+    (function(){
+      const words=['Air Quality','Air Pollution','Particulate Matter','PM2.5','CEA','Weather','PM10','AQI','Emissions','NO₂','SO₂','CO₂','O₃','CO','Smog','Exposure','Monitoring','Sensing','Baseline','Ventilation','Health Impact'];
+      const stage=document.querySelector('.stage');
+      function spawnWord(){
+        const w=words[Math.floor(Math.random()*words.length)];
+        const node=document.createElement('div');
+        node.className='popup-word';
+        node.textContent=w;
+        node.style.left=Math.random()*100+'%';
+        node.style.top=(Math.random()*90+5)+'%';
+        const hue=Math.floor(Math.random()*360);
+        node.style.background=`linear-gradient(90deg,hsl(${hue} 85% 62%),hsl(${(hue+60)%360} 80% 60%))`;
+        node.style.webkitBackgroundClip='text';
+        node.style.backgroundClip='text';
+        node.style.color='transparent';
+        stage.appendChild(node);
+        node.style.animation='popupFloat 3.5s ease forwards';
+        setTimeout(()=>node.remove(),3500);
+      }
+      setInterval(spawnWord,1100);
+    })();
+
+    // Smoke
+    (function(){
+      const canvas=document.getElementById('smokeCanvas');
+      const ctx=canvas.getContext('2d');
+      let w=canvas.width=innerWidth,h=canvas.height=innerHeight;
+      const particles=[];function resize(){w=canvas.width=innerWidth;h=canvas.height=innerHeight;}addEventListener('resize',resize);
+      function rand(min,max){return Math.random()*(max-min)+min}
+      function createParticle(x,y,speed){
+        const life=rand(900,2100);
+        const size=rand(18,72);
+        const hue=Math.floor(Math.random()*360);
+        particles.push({x,y,vx:rand(-0.15,0.15),vy:rand(-0.5,-1.4),size,life,born:performance.now(),hue,alpha:0.9,dispersion:speed>2?0.3:0.8});
+      }
+      let lastX=0,lastY=0,lastTime=0;
+      addEventListener('mousemove',e=>{
+        const now=performance.now();
+        const dx=e.clientX-lastX,dy=e.clientY-lastY,dt=now-lastTime;
+        const speed=Math.sqrt(dx*dx+dy*dy)/(dt||1);
+        for(let i=0;i<speed*2;i++)createParticle(e.clientX+rand(-8,8),e.clientY+rand(-8,8),speed);
+        lastX=e.clientX;lastY=e.clientY;lastTime=now;
+      });
+      function draw(){ctx.clearRect(0,0,w,h);particles.forEach((p,i)=>{const age=performance.now()-p.born,t=age/p.life;if(t>1){particles.splice(i,1);return;}p.x+=p.vx;p.y+=p.vy-p.dispersion;const size=p.size*(1+t*1.2);const alpha=p.alpha*(1-t);const grad=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,size);grad.addColorStop(0,`hsla(${p.hue},80%,60%,${alpha})`);grad.addColorStop(1,`hsla(${p.hue},80%,20%,0)`);ctx.fillStyle=grad;ctx.beginPath();ctx.arc(p.x,p.y,size,0,Math.PI*2);ctx.fill();});requestAnimationFrame(draw);}draw();
+    })();
+
+    // Clickable redirect with animation + background change + sound
+    (function(){
+      const clickable=document.getElementById('clickable');
+      const overlay=document.getElementById('overlay');
+
+      function playSound(){
+        const ctx=new (window.AudioContext||window.webkitAudioContext)();
+        const osc=ctx.createOscillator();
+        const gain=ctx.createGain();
+        osc.type='sine';
+        osc.frequency.setValueAtTime(440,ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(880,ctx.currentTime+5);
+        gain.gain.setValueAtTime(0.1,ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0,ctx.currentTime+5);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime+5);
+      }
+
+      clickable.addEventListener('click',()=>{
+        clickable.style.transition='transform 5s ease, opacity 5s ease';
+        clickable.style.transform='scale(1.4) rotate(5deg)';
+        clickable.style.opacity='0';
+        overlay.style.background='black';
+        playSound();
+        setTimeout(()=>{window.location.href='https://ellonasoft.io';},5000);
+      });
+    })();
+  </script>
+</body>
+</html>
