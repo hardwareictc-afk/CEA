@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Air Quality Monitor - Colombo Fort Monitoring Station</title>
+  <title>Colombo Fort Air Quality Monitoring Station - CEA</title>
   <style>
     :root{
       --bg-1: #0f172a;
@@ -65,10 +65,9 @@
     @keyframes popupFloat {
       0% {opacity:0; transform:translate3d(-50%,-50%,0) scale(0.8) rotate(0deg);}
       20% {opacity:1; transform:translate3d(-50%,-60%,0) scale(1) rotate(-3deg);}
-      40% {transform:translate3d(-50%,-65%,0) scale(1.05) rotate(3deg);}
-      60% {transform:translate3d(-50%,-70%,0) scale(0.95) rotate(-2deg);}
-      80% {transform:translate3d(-50%,-75%,0) scale(1.02) rotate(2deg);}
-      100% {opacity:0; transform:translate3d(-50%,-80%,0) scale(0.9) rotate(0deg);}
+      50% {transform:translate3d(-50%,-70%,0) scale(1.05) rotate(3deg);}
+      80% {opacity:1; transform:translate3d(-50%,-75%,0) scale(0.95) rotate(-2deg);}
+      100% {opacity:0; transform:translate3d(-50%,-85%,0) scale(0.9) rotate(0deg);}
     }
 
     .hint{position:fixed;left:12px;bottom:12px;z-index:60;font-size:12px;background:var(--glass);padding:8px 10px;border-radius:10px;color:#dbeafe}
@@ -90,7 +89,7 @@
 
     <div class="clickable" id="clickable">
       <div id="title" class="site-title effect-neon">Air Quality Monitoring Station at Colombo Fort</div>
-      <div id="subtitle" class="site-subtitle">Launching of the new Air Quality Monitor, donated by AFD / Airparif</div>
+      <div id="subtitle" class="site-subtitle">Launching of the new Air Quality Monitor, <br> Ellona WT1, donated by AFD, via Airparif</div>
       <div class="site-url"><span class="gradiant-flow">ellonasoft.io</span></div>
     </div>
 
@@ -116,7 +115,7 @@
 
     // Background words
     (function(){
-      const words=['Air Quality','Air Pollution','Particulate Matter','PM2.5','CEA','Weather','PM10','AQI','Emissions','NO₂','SO₂','CO₂','O₃','CO','Smog','Exposure','Monitoring','Sensing','Baseline','Ventilation','Health Impact'];
+      const words=['Air Quality','Air Pollution','Particulate Matter','PM₂.₅','PM₁₀','PM₁','PM₂.₅','CEA','CEA','Weather','AQI','AQI','Emissions','NO₂','SO₂','CO₂','O₃','CO','Smog','Exposure','Monitoring','Sensing','Baseline','Ventilation','Health','Health Impact'];
       const stage=document.querySelector('.stage');
       function spawnWord(){
         const w=words[Math.floor(Math.random()*words.length)];
@@ -131,34 +130,74 @@
         node.style.backgroundClip='text';
         node.style.color='transparent';
         stage.appendChild(node);
-        node.style.animation='popupFloat 3.5s ease forwards';
-        setTimeout(()=>node.remove(),3500);
+        node.style.animation='popupFloat 3s ease forwards';
+        setTimeout(()=>node.remove(),5000);
       }
-      setInterval(spawnWord,1100);
+      // one word per second, each stays for 3s, ~3 visible at once
+      setInterval(spawnWord,1000);
     })();
 
-    // Smoke
+    // Smoke with idle emission and angled dispersion
     (function(){
       const canvas=document.getElementById('smokeCanvas');
       const ctx=canvas.getContext('2d');
       let w=canvas.width=innerWidth,h=canvas.height=innerHeight;
-      const particles=[];function resize(){w=canvas.width=innerWidth;h=canvas.height=innerHeight;}addEventListener('resize',resize);
+      const particles=[];
+      function resize(){w=canvas.width=innerWidth;h=canvas.height=innerHeight;}
+      addEventListener('resize',resize);
       function rand(min,max){return Math.random()*(max-min)+min}
+
+      let angleBase = -90; // upwards
+      let angleVar = 30; // +/- 30 degrees
+
       function createParticle(x,y,speed){
         const life=rand(900,2100);
         const size=rand(18,72);
         const hue=Math.floor(Math.random()*360);
-        particles.push({x,y,vx:rand(-0.15,0.15),vy:rand(-0.5,-1.4),size,life,born:performance.now(),hue,alpha:0.9,dispersion:speed>2?0.3:0.8});
+        const angle = (angleBase + rand(-angleVar, angleVar)) * Math.PI/180;
+        const speedFactor = rand(0.5,1.2);
+        const vx = Math.cos(angle)*speedFactor*0.6;
+        const vy = Math.sin(angle)*speedFactor*0.6;
+        particles.push({x,y,vx,vy,size,life,born:performance.now(),hue,alpha:0.9});
       }
-      let lastX=0,lastY=0,lastTime=0;
+
+      let lastX=innerWidth/2,lastY=innerHeight/2,lastTime=0;
+      let mouseMoved=false;
       addEventListener('mousemove',e=>{
         const now=performance.now();
         const dx=e.clientX-lastX,dy=e.clientY-lastY,dt=now-lastTime;
         const speed=Math.sqrt(dx*dx+dy*dy)/(dt||1);
         for(let i=0;i<speed*2;i++)createParticle(e.clientX+rand(-8,8),e.clientY+rand(-8,8),speed);
         lastX=e.clientX;lastY=e.clientY;lastTime=now;
+        mouseMoved=true;
       });
-      function draw(){ctx.clearRect(0,0,w,h);particles.forEach((p,i)=>{const age=performance.now()-p.born,t=age/p.life;if(t>1){particles.splice(i,1);return;}p.x+=p.vx;p.y+=p.vy-p.dispersion;const size=p.size*(1+t*1.2);const alpha=p.alpha*(1-t);const grad=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,size);grad.addColorStop(0,`hsla(${p.hue},80%,60%,${alpha})`);grad.addColorStop(1,`hsla(${p.hue},80%,20%,0)`);ctx.fillStyle=grad;ctx.beginPath();ctx.arc(p.x,p.y,size,0,Math.PI*2);ctx.fill();});requestAnimationFrame(draw);}draw();
+
+      // idle smoke when still: wiggle pointer position slightly every 500ms
+      setInterval(()=>{
+        if(mouseMoved){
+          const wiggleX = lastX + rand(-50,5);
+          const wiggleY = lastY + rand(-40,5);
+          for(let i=0;i<6;i++) createParticle(wiggleX, wiggleY, 0.4);
+        }
+      },900);
+
+      function draw(){
+        ctx.clearRect(0,0,w,h);
+        particles.forEach((p,i)=>{
+          const age=performance.now()-p.born,t=age/p.life;
+          if(t>1){particles.splice(i,1);return;}
+          p.x+=p.vx; p.y+=p.vy;
+          const size=p.size*(1+t*1.2);
+          const alpha=p.alpha*(1-t);
+          const grad=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,size);
+          grad.addColorStop(0,`hsla(${p.hue},80%,60%,${alpha})`);
+          grad.addColorStop(1,`hsla(${p.hue},80%,20%,0)`);
+          ctx.fillStyle=grad;
+          ctx.beginPath();ctx.arc(p.x,p.y,size,0,Math.PI*2);ctx.fill();
+        });
+        requestAnimationFrame(draw);
+      }
+      draw();
     })();
 
     // Clickable redirect with animation + background change + sound
@@ -166,19 +205,105 @@
       const clickable=document.getElementById('clickable');
       const overlay=document.getElementById('overlay');
 
-      function playSound(){
-        const ctx=new (window.AudioContext||window.webkitAudioContext)();
-        const osc=ctx.createOscillator();
-        const gain=ctx.createGain();
-        osc.type='sine';
-        osc.frequency.setValueAtTime(440,ctx.currentTime);
-        osc.frequency.linearRampToValueAtTime(880,ctx.currentTime+5);
-        gain.gain.setValueAtTime(0.1,ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(0,ctx.currentTime+5);
-        osc.connect(gain).connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime+5);
-      }
+function playSound() {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const tempo = 140; // BPM
+  const beat = 60 / tempo;
+  const now = ctx.currentTime;
+  const noteDuration = beat / 4;
+
+  // --- Bass Sub-drop (Deep Sine Wave) ---
+  const bass = () => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(80, now);
+    osc.frequency.exponentialRampToValueAtTime(40, now + beat * 2);
+    
+    gain.gain.setValueAtTime(0.3, now);
+    gain.gain.linearRampToValueAtTime(0, now + beat * 2);
+
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + beat * 2);
+  };
+  bass();
+
+  // --- FM Synthesizer Arpeggiator (Carrier + Modulator) ---
+  const fmSynth = (time, duration, fundamentalFreq) => {
+    const carrier = ctx.createOscillator();
+    const modulator = ctx.createOscillator();
+    const modulatorGain = ctx.createGain();
+    const gain = ctx.createGain();
+
+    // Carrier settings
+    carrier.type = 'sawtooth';
+    carrier.frequency.setValueAtTime(fundamentalFreq, time);
+
+    // Modulator settings
+    modulator.type = 'sine';
+    modulator.frequency.setValueAtTime(fundamentalFreq * 2, time);
+    
+    // Modulation depth
+    modulatorGain.gain.setValueAtTime(fundamentalFreq * 0.5, time);
+    modulatorGain.gain.exponentialRampToValueAtTime(0.1, time + duration * 0.8);
+
+    // Connect the FM patch
+    modulator.connect(modulatorGain);
+    modulatorGain.connect(carrier.frequency); // Modulate carrier frequency
+
+    // Envelope
+    gain.gain.setValueAtTime(0.2, time);
+    gain.gain.linearRampToValueAtTime(0, time + duration);
+
+    carrier.connect(gain).connect(ctx.destination);
+    
+    carrier.start(time);
+    modulator.start(time);
+    carrier.stop(time + duration);
+    modulator.stop(time + duration);
+  };
+  
+  const melody = [
+    { freq: 440, time: now + beat * 0 },
+    { freq: 523.25, time: now + beat * 0.5 },
+    { freq: 659.25, time: now + beat * 1.5 },
+    { freq: 783.99, time: now + beat * 2.5 },
+    { freq: 880, time: now + beat * 3.5 }
+  ];
+
+  melody.forEach(note => {
+    fmSynth(note.time, beat * 0.75, note.freq);
+  });
+  
+  // --- Filter Sweep Noise (for a futuristic whoosh) ---
+  const sweepNoise = () => {
+    const noise = ctx.createBufferSource();
+    const bufferSize = ctx.sampleRate * 2;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const output = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      output[i] = Math.random() * 2 - 1;
+    }
+    noise.buffer = buffer;
+    
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.Q.setValueAtTime(1, now);
+    filter.frequency.setValueAtTime(100, now);
+    filter.frequency.linearRampToValueAtTime(5000, now + beat * 4);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.1, now);
+    gain.gain.linearRampToValueAtTime(0, now + beat * 4);
+
+    noise.connect(filter).connect(gain).connect(ctx.destination);
+    noise.start(now);
+    noise.stop(now + beat * 4);
+  };
+  sweepNoise();
+}
 
       clickable.addEventListener('click',()=>{
         clickable.style.transition='transform 5s ease, opacity 5s ease';
