@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CEA - Install Our Progressive Web App (PWA)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+
+        .app-name {
+            font-weight: bold;
+            font-style: italic;
+            color: #fff200;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .app-link {
+            color: #fff200;
+            text-decoration: underline;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        /* PWA Install Button Styles */
+        .install-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+            text-align: center;
+            border-left: 5px solid #4CAF50;
+        }
+
+        .install-button {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .install-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+        }
+
+        .install-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .install-button svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Status Messages */
+        .status-message {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: none;
+        }
+
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .status-message.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        /* Instructions Section */
+        .instructions {
+            margin: 30px 0;
+        }
+
+        .instruction-card {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+
+        .instruction-header {
+            background: #f8f9fa;
+            padding: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .browser-family {
+            font-size: 0.8em;
+            font-weight: normal;
+            color: #666;
+            margin-left: 5px;
+        }
+
+        .instruction-content {
+            padding: 15px;
+            display: none;
+        }
+
+        .instruction-content.active {
+            display: block;
+        }
+
+        .step {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f1f3f4;
+            border-radius: 5px;
+            border-left: 3px solid #4CAF50;
+        }
+
+        /* Browser Detection Info */
+        .browser-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .install-instruction-text {
+            font-style: italic;
+            color: #2c5aa0;
+            font-size: 1.1em;
+            font-weight: 500;
+        }
+
+        /* Direct Links Section */
+        .links-section {
+            margin: 30px 0;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .links-section h2 {
+            margin-bottom: 10px;
+        }
+
+        .links-section p {
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .link-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .link-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            text-decoration: none;
+            color: #333;
+            transition: transform 0.2s;
+        }
+
+        .link-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+
+        .link-card h4 {
+            color: #4CAF50;
+            margin-bottom: 10px;
+        }
+
+        .link-card p {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .link-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📱 Install Our App</h1>
+            <p>
+                <a href="https://www.aq.cea.lk" class="app-link" target="_blank"><span class="app-name">AirShare, National Air Quality Network, Sri Lanka (by CEA)</span></a> 
+                is available as an App.<br>
+                Get the best experience with our Progressive Web App (PWA).<br>
+                Once installed, check your home screen, app vault, start menu, etc.                
+            </p>
+        </div>
+
+        <div class="content">
+            <!-- PWA Install Section -->
+            <div class="install-section">
+                <h2>🚀 Install as App</h2>
+                <p>Click the button below to install our Progressive Web App directly to your device!</p>
+                
+                <!-- Smart Install Button -->
+                <button id="installButton" class="install-button" style="display: none;">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                    </svg>
+                    Install App
+                </button>
+
+                <!-- Status Messages -->
+                <div id="statusMessage" class="status-message"></div>
+                
+                <!-- Browser Detection Info -->
+                <div id="browserInfo" class="browser-info">
+                    <strong>Your Web Browser:</strong> <span id="browserName"></span><br>
+                    <strong>Browser Family/Group:</strong> <span id="browserFamily"></span><br>
+                    <strong>Operating System:</strong> <span id="osName"></span><br>
+                    <strong>PWA Support:</strong> <span id="pwaSupport"></span><br>
+                    <hr style="margin: 10px 0; border: none; border-top: 1px solid #ddd;">
+                    <strong>🎯 Quick Install Guide for this Web Browser/OS:</strong><br>
+                    <span id="installInstruction" class="install-instruction-text"></span>
+                </div>
+            </div>
+
+            <!-- Manual Installation Instructions -->
+            <div class="instructions">
+                <h2>📖 Installation Instructions</h2>
+                <p>If the automatic install button doesn't work, follow these manual instructions based on your browser:</p>
+
+                <!-- Chrome and Chromium Instructions -->
+                <div class="instruction-card">
+                    <div class="instruction-header" onclick="toggleInstruction('chrome')">
+                        🌐 Google Chrome <span class="browser-family">(Chromium-based browsers)</span>
+                        <span>+</span>
+                    </div>
+                    <div class="instruction-content" id="chrome">
+                        <div class="step">
+                            <strong>Desktop (Windows/Mac/Linux):</strong> Look for the install icon (⊕) in the address bar, or click the three-dot menu (⋮) → "Install [App Name]"
+                        </div>
+                        <div class="step">
+                            <strong>Mobile (Android):</strong> Tap the three-dot menu (⋮) → "Add to Home screen" or look for the install banner at the bottom
+                        </div>
+                        <div class="step">
+                            <strong>Other Chromium browsers:</strong> Similar browsers include Brave, Vivaldi, Opera (newer versions), and Samsung Internet - they follow similar installation patterns
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Edge Instructions -->
+                <div class="instruction-card">
+                    <div class="instruction-header" onclick="toggleInstruction('edge')">
+                        🔷 Microsoft Edge <span class="browser-family">(Chromium-based)</span>
+                        <span>+</span>
+                    </div>
+                    <div class="instruction-content" id="edge">
+                        <div class="step">
+                            <strong>Desktop:</strong> Look for the install icon (⊕) in the address bar, or go to Settings and more (...) → "Apps" → "Install this site as an app"
+                        </div>
+                        <div class="step">
+                            <strong>Mobile:</strong> Similar to Chrome - look for "Add to Home screen" or install prompts
+                        </div>
+                        <div class="step">
+                            <strong>Windows Integration:</strong> Edge PWAs integrate deeply with Windows, appearing in Start Menu and taskbar
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Firefox Instructions -->
+                <div class="instruction-card">
+                    <div class="instruction-header" onclick="toggleInstruction('firefox')">
+                        🔥 Firefox <span class="browser-family">(Mozilla-based browsers)</span>
+                        <span>+</span>
+                    </div>
+                    <div class="instruction-content" id="firefox">
+                        <div class="step">
+                            <strong>Desktop:</strong> Firefox has limited PWA support. Try: Page menu (☰) → "Page Actions" → "Add to Desktop" (creates shortcut)
+                        </div>
+                        <div class="step">
+                            <strong>Mobile (Android):</strong> Look for "Add to Home screen" option in the menu (creates bookmark shortcut)
+                        </div>
+                        <div class="step">
+                            <strong>Other Mozilla browsers:</strong> Similar browsers like Waterfox, LibreWolf follow similar patterns with limited PWA support
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Safari Instructions -->
+                <div class="instruction-card">
+                    <div class="instruction-header" onclick="toggleInstruction('safari')">
+                        🧭 Safari <span class="browser-family">(WebKit-based)</span>
+                        <span>+</span>
+                    </div>
+                    <div class="instruction-content" id="safari">
+                        <div class="step">
+                            <strong>iOS (iPhone/iPad):</strong> Tap the Share button (📤) → "Add to Home Screen" → "Add"
+                        </div>
+                        <div class="step">
+                            <strong>macOS (Safari 17+):</strong> Go to File menu → "Add to Dock" (requires macOS Sonoma or later)
+                        </div>
+                        <div class="step">
+                            <strong>Note:</strong> Safari is the only browser on iOS that supports PWA installation
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Other Browsers Instructions -->
+                <div class="instruction-card">
+                    <div class="instruction-header" onclick="toggleInstruction('other')">
+                        🌍 Other Browsers <span class="browser-family">(Various engines)</span>
+                        <span>+</span>
+                    </div>
+                    <div class="instruction-content" id="other">
+                        <div class="step">
+                            <strong>Opera:</strong> Click Opera menu → "Page" → "Install [App Name]" or look for install prompt
+                        </div>
+                        <div class="step">
+                            <strong>Brave, Vivaldi, Arc:</strong> These Chromium-based browsers usually support PWA installation similar to Chrome
+                        </div>
+                        <div class="step">
+                            <strong>Samsung Internet:</strong> Look for "Add page to" → "Home screen" in the menu
+                        </div>
+                        <div class="step">
+                            <strong>Unsupported browsers:</strong> If your browser doesn't support PWA installation, you can:
+                            <ul style="margin-top: 8px; padding-left: 20px;">
+                                <li>Create a desktop/home screen bookmark</li>
+                                <li>Use browser's "Create shortcut" feature</li>
+                                <li>Enable full-screen mode for app-like experience</li>
+                                <li>Switch to a PWA-compatible browser</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Direct Installation Links -->
+            <div class="links-section">
+                <h2>🔗 Direct Installation Links</h2>
+                <p><em>(If you can prepare some action button or similar, to initiate installation (or opening if installed) when clicked, etc.)</em></p>
+                <p>Click these links to install the app directly on your device:</p>
+                
+                <div class="link-grid">
+                    <!-- Universal Link -->
+                    <a href="#" class="link-card" id="universalLink" onclick="handleUniversalInstall(event)">
+                        <h4>🌐 Universal Install</h4>
+                        <p>Smart detection for your browser and OS</p>
+                    </a>
+
+                    <!-- Chrome Link -->
+                    <a href="#" class="link-card" onclick="handleChromeInstall(event)">
+                        <h4>🌐 Chrome Install</h4>
+                        <p>For Chrome and Chromium-based browsers</p>
+                    </a>
+
+                    <!-- PWA Protocol Link (if supported) -->
+                    <a href="#" class="link-card" onclick="handleProtocolInstall(event)">
+                        <h4>⚡ Protocol Install</h4>
+                        <p>Direct PWA protocol (Chrome/Edge)</p>
+                    </a>
+
+                    <!-- iOS Safari Link -->
+                    <a href="#" class="link-card" onclick="handleSafariInstall(event)">
+                        <h4>🧭 Safari Install</h4>
+                        <p>For iOS Safari users</p>
+                    </a>
+
+                    <!-- Android Chrome Link -->
+                    <a href="#" class="link-card" onclick="handleAndroidInstall(event)">
+                        <h4>📱 Android Install</h4>
+                        <p>For Android Chrome users</p>
+                    </a>
+
+                    <!-- Windows Store Link -->
+                    <a href="#" class="link-card" onclick="handleWindowsStoreInstall(event)">
+                        <h4>🪟 Windows Store</h4>
+                        <p>Install via Microsoft Store</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // PWA Installation Script with Browser Detection and Smart Handling
+        
+        // Global variables for PWA functionality
+        let deferredPrompt;
+        let installButton = document.getElementById('installButton');
+        let statusMessage = document.getElementById('statusMessage');
+
+        // Browser and OS Detection with Installation Instructions
+        function detectBrowserAndOS() {
+            const userAgent = navigator.userAgent;
+            let browserName = 'Unknown';
+            let browserFamily = 'Unknown';
+            let osName = 'Unknown';
+            let installInstruction = 'Check manual instructions below for installation steps.';
+
+            // Detect Browser and Family
+            if (userAgent.includes('Chrome') && !userAgent.includes('Edg')) {
+                browserName = 'Google Chrome';
+                browserFamily = 'Chromium-based';
+            } else if (userAgent.includes('Edg')) {
+                browserName = 'Microsoft Edge';
+                browserFamily = 'Chromium-based';
+            } else if (userAgent.includes('Firefox')) {
+                browserName = 'Mozilla Firefox';
+                browserFamily = 'Mozilla/Gecko-based';
+            } else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) {
+                browserName = 'Safari';
+                browserFamily = 'WebKit-based';
+            } else if (userAgent.includes('Opera') || userAgent.includes('OPR')) {
+                browserName = 'Opera';
+                browserFamily = 'Chromium-based';
+            } else if (userAgent.includes('Brave')) {
+                browserName = 'Brave';
+                browserFamily = 'Chromium-based';
+            } else if (userAgent.includes('Vivaldi')) {
+                browserName = 'Vivaldi';
+                browserFamily = 'Chromium-based';
+            } else if (userAgent.includes('SamsungBrowser')) {
+                browserName = 'Samsung Internet';
+                browserFamily = 'Chromium-based';
+            } else {
+                browserName = 'Unknown Browser';
+                browserFamily = 'Unknown Engine';
+            }
+
+            // Detect OS
+            if (userAgent.includes('Windows')) {
+                osName = 'Windows';
+            } else if (userAgent.includes('Mac')) {
+                osName = 'macOS';
+            } else if (userAgent.includes('Linux')) {
+                osName = 'Linux';
+            } else if (userAgent.includes('Android')) {
+                osName = 'Android';
+            } else if (userAgent.includes('iPhone') || userAgent.includes('iPad')) {
+                osName = 'iOS';
+            }
+
+            // Generate specific installation instruction based on detected browser and OS
+            if (browserFamily === 'Chromium-based' && osName === 'Windows') {
+                installInstruction = '💻 Look for the install icon (⊕) in the address bar, or click browser menu → "Install [App Name]" or "Apps" section';
+            } else if (browserFamily === 'Chromium-based' && osName === 'macOS') {
+                installInstruction = '🖥️ Look for the install icon (⊕) in the address bar, or click browser menu → "Install [App Name]" or "Apps" section';
+            } else if (browserFamily === 'Chromium-based' && osName === 'Linux') {
+                installInstruction = '🐧 Look for the install icon (⊕) in the address bar, or click browser menu → "Install [App Name]" or "Apps" section';
+            } else if (browserFamily === 'Chromium-based' && osName === 'Android') {
+                installInstruction = '📱 Tap the browser menu (⋮) → "Add to Home screen" or look for the install banner at the bottom';
+            } else if (browserName === 'Safari' && osName === 'iOS') {
+                installInstruction = '🧭📱 Tap the Share button (📤) at the bottom → "Add to Home Screen" → "Add"';
+            } else if (browserName === 'Safari' && osName === 'macOS') {
+                installInstruction = '🧭🖥️ Go to File menu → "Add to Dock" (requires Safari 17+ and macOS Sonoma+)';
+            } else if (browserFamily === 'Mozilla/Gecko-based' && osName === 'Windows') {
+                installInstruction = '🔥💻 Firefox has limited PWA support. Try: Page menu (☰) → "Page Actions" → "Add to Desktop" (creates shortcut)';
+            } else if (browserFamily === 'Mozilla/Gecko-based' && osName === 'macOS') {
+                installInstruction = '🔥🖥️ Firefox has limited PWA support. You can bookmark the page or create a desktop shortcut';
+            } else if (browserFamily === 'Mozilla/Gecko-based' && osName === 'Linux') {
+                installInstruction = '🔥🐧 Firefox has limited PWA support. You can create a desktop shortcut or bookmark the page';
+            } else if (browserFamily === 'Mozilla/Gecko-based' && osName === 'Android') {
+                installInstruction = '🔥📱 Tap Firefox menu (⋮) → "Add to Home screen" (creates bookmark shortcut)';
+            } else if (browserName === 'Samsung Internet' && osName === 'Android') {
+                installInstruction = '📱 Tap menu → "Add page to" → "Home screen" or look for install prompts';
+            } else if (osName === 'iOS' && browserName !== 'Safari') {
+                installInstruction = '📱 On iOS, only Safari supports PWA installation. Open this page in Safari and use Share → "Add to Home Screen"';
+            } else {
+                // Generic fallback for unknown combinations
+                if (osName === 'Android') {
+                    installInstruction = '📱 Look for "Add to Home screen" option in your browser menu, or try switching to Chrome for full PWA support';
+                } else if (osName === 'iOS') {
+                    installInstruction = '📱 Open in Safari and use Share button → "Add to Home Screen" (only Safari supports PWA installation on iOS)';
+                } else {
+                    installInstruction = '💻 Look for install icon in address bar, check browser menu for "Install App" option, or try using Chrome/Edge for better PWA support';
+                }
+            }
+
+            // Update UI
+            document.getElementById('browserName').textContent = browserName;
+            document.getElementById('browserFamily').textContent = browserFamily;
+            document.getElementById('osName').textContent = osName;
+
+            return { browserName, browserFamily, osName, installInstruction };
+        }
+
+        // Check PWA Support
+        function checkPWASupport() {
+            const { browserName, browserFamily, osName } = detectBrowserAndOS();
+            let pwaSupport = 'Not Supported';
+            
+            // Check for PWA installation support
+            if ('serviceWorker' in navigator && 'beforeinstallprompt' in window) {
+                pwaSupport = 'Fully Supported';
+            } else if (browserName === 'Safari' && osName === 'iOS') {
+                pwaSupport = 'Add to Home Screen';
+            } else if (browserName === 'Safari' && osName === 'macOS') {
+                pwaSupport = 'Add to Dock (Safari 17+)';
+            } else if (browserFamily === 'Chromium-based') {
+                pwaSupport = 'Supported (may need update)';
+            } else if ('serviceWorker' in navigator) {
+                pwaSupport = 'Partially Supported';
+            }
+
+            document.getElementById('pwaSupport').textContent = pwaSupport;
+            return pwaSupport !== 'Not Supported';
+        }
+
+        // Show status message
+        function showStatus(message, type = 'info') {
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message ${type}`;
+            statusMessage.style.display = 'block';
+            setTimeout(() => {
+                statusMessage.style.display = 'none';
+            }, 5000);
+        }
+
+        // Listen for the beforeinstallprompt event
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent the mini-infobar from appearing on mobile
+            e.preventDefault();
+            // Stash the event so it can be triggered later
+            deferredPrompt = e;
+            // Show the install button
+            installButton.style.display = 'inline-flex';
+            showStatus('App can be installed! Click the install button above.', 'success');
+        });
+
+        // Handle install button click
+        installButton.addEventListener('click', async () => {
+            if (!deferredPrompt) {
+                showStatus('Installation prompt not available. Try manual installation.', 'warning');
+                return;
+            }
+
+            // Show the install prompt
+            deferredPrompt.prompt();
+            
+            // Wait for the user to respond to the prompt
+            const { outcome } = await deferredPrompt.userChoice;
+            
+            if (outcome === 'accepted') {
+                showStatus('App installed successfully!', 'success');
+            } else {
+                showStatus('Installation cancelled by user.', 'info');
+            }
+            
+            // Clear the deferredPrompt
+            deferredPrompt = null;
+            installButton.style.display = 'none';
+        });
+
+        // Listen for app installed event
+        window.addEventListener('appinstalled', () => {
+            showStatus('PWA was installed successfully!', 'success');
+            installButton.style.display = 'none';
+        });
+
+        // Toggle instruction sections
+        function toggleInstruction(id) {
+            const content = document.getElementById(id);
+            const header = content.previousElementSibling;
+            const icon = header.querySelector('span:last-child');
+            
+            if (content.classList.contains('active')) {
+                content.classList.remove('active');
+                icon.textContent = '+';
+            } else {
+                // Close all other instructions
+                document.querySelectorAll('.instruction-content').forEach(el => {
+                    el.classList.remove('active');
+                    el.previousElementSibling.querySelector('span:last-child').textContent = '+';
+                });
+                
+                content.classList.add('active');
+                icon.textContent = '−';
+            }
+        }
+
+        // Installation link handlers
+        function handleUniversalInstall(event) {
+            event.preventDefault();
+            const { browserName, browserFamily, osName } = detectBrowserAndOS();
+            
+            // Smart routing based on browser and OS
+            if (deferredPrompt) {
+                installButton.click();
+            } else if (browserName === 'Safari' && osName === 'iOS') {
+                showStatus('On iOS Safari: Tap the Share button, then "Add to Home Screen"', 'info');
+            } else if (browserName === 'Safari' && osName === 'macOS') {
+                showStatus('On macOS Safari: Go to File menu → "Add to Dock"', 'info');
+            } else if (browserFamily === 'Chromium-based') {
+                showStatus('Look for the install icon in your address bar, or check the browser menu for "Install App"', 'info');
+            } else {
+                showStatus('Manual installation required for your browser. Check the instructions above.', 'warning');
+            }
+        }
+
+        function handleChromeInstall(event) {
+            event.preventDefault();
+            if (deferredPrompt) {
+                installButton.click();
+            } else {
+                showStatus('Chrome/Chromium browsers: Look for the install icon (⊕) in the address bar', 'info');
+            }
+        }
+
+        function handleProtocolInstall(event) {
+            event.preventDefault();
+            // Attempt to use web+pwa protocol (experimental)
+            try {
+                window.location.href = `web+pwa:${window.location.origin}`;
+            } catch (error) {
+                showStatus('Protocol installation not supported. Try the install button above.', 'warning');
+            }
+        }
+
+        function handleSafariInstall(event) {
+            event.preventDefault();
+            showStatus('Safari iOS: Tap Share (📤) → "Add to Home Screen" | Safari macOS: File → "Add to Dock"', 'info');
+        }
+
+        function handleAndroidInstall(event) {
+            event.preventDefault();
+            if (deferredPrompt) {
+                installButton.click();
+            } else {
+                showStatus('Android Chrome: Look for "Add to Home screen" in the menu or install banner', 'info');
+            }
+        }
+
+        function handleWindowsStoreInstall(event) {
+            event.preventDefault();
+            // For Edge PWAs that can be published to Microsoft Store
+            showStatus('Windows Store installation may be available for some PWAs through Edge', 'info');
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const { browserName, browserFamily, osName, installInstruction } = detectBrowserAndOS();
+            const hasSupport = checkPWASupport();
+            
+            // Update the install instruction in the UI
+            document.getElementById('installInstruction').textContent = installInstruction;
+            
+            if (!hasSupport) {
+                showStatus('Your browser has limited PWA support. Manual installation may be required.', 'warning');
+            }
+
+            // Check if already installed
+            if (window.navigator.standalone === true) {
+                showStatus('App is already running as a PWA!', 'success');
+            }
+        });
+
+        // Service Worker Registration (if you have one)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(() => console.log('Service Worker registered'))
+                .catch(err => console.log('Service Worker registration failed'));
+        }
+    </script>
+</body>
+</html>
