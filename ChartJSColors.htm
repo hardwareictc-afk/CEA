@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Parameter Chart Color Demo Explorer Prototype</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 0 20px;
+            color: #333;
+        }
+        .intro-text {
+            background: #f0f7ff;
+            padding: 15px;
+            border-left: 4px solid #0066cc;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .controls-container {
+            margin-bottom: 20px;
+            background: #fafafa;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .mode-toggles-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* 2 Columns */
+            gap: 20px;
+        }
+        .mode-label {
+            display: block;
+            cursor: pointer;
+            padding: 15px;
+            border: 2px solid #eee;
+            border-radius: 6px;
+            transition: all 0.2s;
+            height: 100%;
+            box-sizing: border-box;
+        }
+        .mode-label:hover { background: #f0f0f0; }
+        input[type="radio"]:checked + .mode-label {
+            border-color: #0066cc;
+            background: #e6f2ff;
+        }
+        input[type="radio"] {
+            display: none; /* Hide the actual radio circle for a cleaner look */
+        }
+        .parameter-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+        }
+        .parameter-checkboxes {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .param-label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9em;
+            cursor: pointer;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        .add-btn { background: #0066cc; }
+        .add-btn:hover { background: #0052a3; }
+        .remove-btn { background: #cc0000; }
+        .remove-btn:hover { background: #a30000; }
+        
+        .chart-container {
+            position: relative;
+            height: 500px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+    </style>
+<meta name="author" content="Gadash - CEA +">
+<meta name="generator" content="Made with the help of Gemini AI">
+</head>
+<body>
+
+    <div class="intro-text">
+        <strong>Note:</strong> This chart features 2 color modes. It starts with 5 visible parameters (out of 10 available). <br>
+        Line thickness, data markers, and the <strong>legend font size</strong> dynamically adjust based on the total number of selected parameters. 
+    </div>
+
+    <div class="controls-container">
+        <h3 style="margin-top: 0;">Color Strategy</h3>
+        <div class="mode-toggles-grid">
+            <label>
+                <input type="radio" name="colorModeTop" id="mode1Top" value="static" checked>
+                <div class="mode-label">
+                    <strong>Mode 1: Static Categorical</strong><br>
+                    <small>Parameters keep their assigned color from a fixed palette, regardless of how many are selected.</small>
+                </div>
+            </label>
+            <label>
+                <input type="radio" name="colorModeTop" id="mode2Top" value="dynamic">
+                <div class="mode-label">
+                    <strong>Mode 2: Dynamic Scale (Excel Style)</strong><br>
+                    <small>Colors dynamically recalculate to spread evenly across the color wheel based on the total visible parameters.</small>
+                </div>
+            </label>
+        </div>
+    </div>
+
+    <div class="parameter-section">
+        <h3 style="margin-top: 0;">Parameters</h3>
+        <div class="parameter-checkboxes" id="checkboxContainer"></div>
+        <div class="action-buttons">
+            <button class="btn add-btn" id="addParamBtn">+ Add Parameter</button>
+            <button class="btn remove-btn" id="removeParamBtn">- Remove Parameter</button>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="multiParamChart"></canvas>
+    </div>
+
+    <div class="controls-container">
+        <h3 style="margin-top: 0;">Color Strategy (Secondary Control)</h3>
+        <div class="mode-toggles-grid">
+            <label>
+                <input type="radio" name="colorModeBottom" id="mode1Bottom" value="static" checked>
+                <div class="mode-label">
+                    <strong>Mode 1: Static Categorical</strong><br>
+                    <small>Parameters keep their assigned color from a fixed palette.</small>
+                </div>
+            </label>
+            <label>
+                <input type="radio" name="colorModeBottom" id="mode2Bottom" value="dynamic">
+                <div class="mode-label">
+                    <strong>Mode 2: Dynamic Scale (Excel Style)</strong><br>
+                    <small>Colors dynamically recalculate to spread evenly.</small>
+                </div>
+            </label>
+        </div>
+    </div>
+
+    <script>
+        const INITIAL_TOTAL_PARAMETERS = 10;
+        const INITIAL_VISIBLE = 5;
+        const DATA_POINTS = 12; // E.g., 12 months
+        let isDynamicMode = false; 
+
+        // A distinct color palette for Mode 1
+        const staticPalette = [
+            '#e6194B', '#3cb44b', '#ffe119', '#4363d8', '#f58231', 
+            '#911eb4', '#42d4f4', '#f032e6', '#bfef45', '#fabed4', 
+            '#469990', '#dcbeff', '#9A6324', '#fffac8', '#800000', 
+            '#aaffc3', '#808000', '#ffd8b1', '#000075', '#a9a9a9'
+        ];
+
+        const labels = Array.from({length: DATA_POINTS}, (_, i) => `Point ${i + 1}`);
+        
+        // Calculate Base Thickness logic
+        function getBaseThickness(visibleCount) {
+            if (visibleCount <= 5) return 3;
+            if (visibleCount <= 10) return 2;
+            if (visibleCount <= 20) return 1.5;
+            return 1; 
+        }
+
+        // Initialize Chart.js
+        const ctx = document.getElementById('multiParamChart').getContext('2d');
+        const myChart = new Chart(ctx, {
+            type: 'line',
+            data: { labels: labels, datasets: [] },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
+                },
+                plugins: {
+                    legend: { 
+                        display: true, 
+                        position: 'right', // Added Legend on the Right
+                        labels: {
+                            font: { size: 14 },
+                            boxWidth: 14,
+                            padding: 10
+                        },
+                        // Sync native legend clicks with our custom checkboxes
+                        onClick: (e, legendItem, legend) => {
+                            const index = legendItem.datasetIndex;
+                            myChart.data.datasets[index].hidden = !myChart.data.datasets[index].hidden;
+                            renderCheckboxes(); 
+                            updateChartVisuals();
+                        }
+                    }, 
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return ` ${context.dataset.label}: ${context.parsed.y.toFixed(2)}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Function to create a dataset
+        function generateDataset(index, isHidden) {
+            const data = [Math.random() * 100];
+            for (let j = 1; j < DATA_POINTS; j++) {
+                data.push(data[j - 1] + (Math.random() * 20 - 10)); // random walk
+            }
+            return {
+                label: `Parameter ${index + 1}`,
+                data: data,
+                hidden: isHidden,
+                tension: 0.3 // smooth curves
+            };
+        }
+
+        // Core Logic: Apply Colors, Thickness, Markers, and Legend Sizing
+        function updateChartVisuals() {
+            const visibleDatasets = myChart.data.datasets.filter(ds => !ds.hidden);
+            const totalVisible = visibleDatasets.length;
+            const totalDatasets = myChart.data.datasets.length;
+
+            // --- Dynamic Legend Font Scaling ---
+            let legendFontSize = 14;
+            if (totalDatasets > 25) legendFontSize = 10;
+            else if (totalDatasets > 15) legendFontSize = 11;
+            else if (totalDatasets > 10) legendFontSize = 12;
+
+            myChart.options.plugins.legend.labels.font.size = legendFontSize;
+            myChart.options.plugins.legend.labels.boxWidth = legendFontSize; // Scale color box with text
+            // ------------------------------------
+
+            const baseThickness = getBaseThickness(totalVisible);
+            const showMarkers = totalVisible <= 10;
+
+            let visibleIndex = 0;
+
+            myChart.data.datasets.forEach((dataset, originalIndex) => {
+                dataset.pointRadius = showMarkers && !dataset.hidden ? 4 : 0;
+                dataset.pointHoverRadius = showMarkers ? 6 : 4;
+                dataset.borderWidth = baseThickness;
+
+                if (!dataset.hidden) {
+                    if (isDynamicMode) {
+                        const hue = (visibleIndex * (360 / totalVisible)) % 360;
+                        dataset.borderColor = `hsl(${hue}, 80%, 45%)`;
+                        dataset.backgroundColor = `hsl(${hue}, 80%, 45%)`;
+                    } else {
+                        const color = staticPalette[originalIndex % staticPalette.length];
+                        dataset.borderColor = color;
+                        dataset.backgroundColor = color;
+                    }
+                    visibleIndex++;
+                }
+            });
+            myChart.update();
+        }
+
+        // Function to build UI Checkboxes dynamically based on current datasets
+        const checkboxContainer = document.getElementById('checkboxContainer');
+        function renderCheckboxes() {
+            checkboxContainer.innerHTML = ''; 
+            
+            myChart.data.datasets.forEach((dataset, index) => {
+                const label = document.createElement('label');
+                label.className = 'param-label';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = !dataset.hidden;
+                checkbox.dataset.index = index;
+                
+                checkbox.addEventListener('change', (e) => {
+                    const datasetIndex = e.target.dataset.index;
+                    myChart.data.datasets[datasetIndex].hidden = !e.target.checked;
+                    updateChartVisuals();
+                });
+
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(dataset.label));
+                checkboxContainer.appendChild(label);
+            });
+        }
+
+        // --- Mode Synchronization Logic ---
+        function setMode(isDynamic) {
+            isDynamicMode = isDynamic;
+            
+            document.getElementById('mode1Top').checked = !isDynamic;
+            document.getElementById('mode2Top').checked = isDynamic;
+            
+            document.getElementById('mode1Bottom').checked = !isDynamic;
+            document.getElementById('mode2Bottom').checked = isDynamic;
+
+            updateChartVisuals();
+        }
+
+        document.getElementById('mode1Top').addEventListener('change', () => setMode(false));
+        document.getElementById('mode1Bottom').addEventListener('change', () => setMode(false));
+        document.getElementById('mode2Top').addEventListener('change', () => setMode(true));
+        document.getElementById('mode2Bottom').addEventListener('change', () => setMode(true));
+
+        // --- Add / Remove Button Logic ---
+        document.getElementById('addParamBtn').addEventListener('click', () => {
+            const newIndex = myChart.data.datasets.length;
+            const newDataset = generateDataset(newIndex, false); 
+            
+            myChart.data.datasets.push(newDataset);
+            renderCheckboxes();
+            updateChartVisuals();
+        });
+
+        document.getElementById('removeParamBtn').addEventListener('click', () => {
+            if (myChart.data.datasets.length > 0) {
+                myChart.data.datasets.pop(); 
+                renderCheckboxes();
+                updateChartVisuals();
+            }
+        });
+
+        // --- Initial Setup ---
+        for (let i = 0; i < INITIAL_TOTAL_PARAMETERS; i++) {
+            myChart.data.datasets.push(generateDataset(i, i >= INITIAL_VISIBLE));
+        }
+        
+        renderCheckboxes();
+        updateChartVisuals();
+
+    </script>
+</body>
+</html>
